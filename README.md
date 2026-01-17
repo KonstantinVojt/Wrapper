@@ -145,7 +145,7 @@ This confirms correct interaction between all contracts.
 
 ## Technologies Used
 
-* Solidity ^0.8.x
+* Solidity ^0.8.19
 * OpenZeppelin Contracts v5
 * Hardhat
 * Ethers.js
