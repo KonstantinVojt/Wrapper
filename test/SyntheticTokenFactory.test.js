@@ -48,7 +48,7 @@ describe("SyntheticTokenFactory", function () {
       ).args.token;
 
       const token = await ethers.getContractAt("SyntheticToken", tokenAddress);
-      expect(await token.owner()).to.equal(factory.address);
+      expect(await token.owner()).to.equal(owner.address);
     });
 
     it("emits SyntheticCreated event", async function () {
@@ -77,68 +77,6 @@ describe("SyntheticTokenFactory", function () {
     it("only owner can create synthetic", async function () {
       await expect(
         factory.connect(user).createSynthetic(NAME, SYMBOL)
-      ).to.be.reverted;
-    });
-  });
-
-  describe("mint()", function () {
-    beforeEach(async function () {
-      const tx = await factory.createSynthetic(NAME, SYMBOL);
-      const receipt = await tx.wait();
-      const tokenAddress = receipt.events.find(
-        e => e.event === "SyntheticCreated"
-      ).args.token;
-
-      token = await ethers.getContractAt("SyntheticToken", tokenAddress);
-    });
-
-    it("owner can mint tokens", async function () {
-      await factory.mint(token.address, user.address, AMOUNT);
-
-      expect(await token.balanceOf(user.address)).to.equal(AMOUNT);
-    });
-
-    it("reverts for unknown synthetic", async function () {
-      await expect(
-        factory.mint(other.address, user.address, AMOUNT)
-      ).to.be.reverted;
-    });
-
-    it("non-owner cannot mint", async function () {
-      await expect(
-        factory.connect(user).mint(token.address, user.address, AMOUNT)
-      ).to.be.reverted;
-    });
-  });
-
-  describe("burn()", function () {
-    beforeEach(async function () {
-      const tx = await factory.createSynthetic(NAME, SYMBOL);
-      const receipt = await tx.wait();
-      const tokenAddress = receipt.events.find(
-        e => e.event === "SyntheticCreated"
-      ).args.token;
-
-      token = await ethers.getContractAt("SyntheticToken", tokenAddress);
-
-      await factory.mint(token.address, user.address, AMOUNT);
-    });
-
-    it("owner can burn tokens", async function () {
-      await factory.burn(token.address, user.address, AMOUNT);
-
-      expect(await token.balanceOf(user.address)).to.equal(0);
-    });
-
-    it("reverts for unknown synthetic", async function () {
-      await expect(
-        factory.burn(other.address, user.address, AMOUNT)
-      ).to.be.reverted;
-    });
-
-    it("non-owner cannot burn", async function () {
-      await expect(
-        factory.connect(user).burn(token.address, user.address, AMOUNT)
       ).to.be.reverted;
     });
   });

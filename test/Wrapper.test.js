@@ -9,7 +9,7 @@ describe("Wrapper", function () {
   let token;
   let wrapper;
 
-  const TOKENS_PER_NFT = ethers.utils.parseEther("100");
+  const TOKENS_PER_NFT = ethers.utils.parseUnits("100", 18);
 
   beforeEach(async function () {
     [owner, user, other] = await ethers.getSigners();
@@ -28,7 +28,7 @@ describe("Wrapper", function () {
 
     // Deploy Wrapper
     const Wrapper = await ethers.getContractFactory("Wrapper");
-    wrapper = await Wrapper.deploy(token.address);
+    wrapper = await Wrapper.deploy(token.address, TOKENS_PER_NFT);
     await wrapper.deployed();
 
     // User approves Wrapper
@@ -50,9 +50,53 @@ describe("Wrapper", function () {
     it("emits Wrapped event", async function () {
       await expect(wrapper.connect(user).wrap())
         .to.emit(wrapper, "Wrapped")
-        .withArgs(user.address, 1, TOKENS_PER_NFT);
+        .withArgs(user.address, user.address, 1, TOKENS_PER_NFT);
     });
   });
+
+   describe("wrapTo()", function () {
+      it("emits Wrapped event with payer and recipient", async function () {
+      await expect(wrapper.connect(user).wrapTo(other.address))
+      .to.emit(wrapper, "Wrapped")
+      .withArgs(
+        user.address,      // payer
+        other.address,     // recipient
+        1,                 // tokenId
+        TOKENS_PER_NFT
+      );
+    });
+
+      it("reverts for zero address recipient", async function () {
+      await expect(
+        wrapper.connect(user).wrapTo(ethers.constants.AddressZero)
+      ).to.be.reverted;
+    });
+
+      it("mints NFT to recipient, not payer", async function () {
+      await wrapper.connect(user).wrapTo(other.address);
+
+      expect(await wrapper.ownerOf(1)).to.equal(other.address);
+      expect(await token.balanceOf(user.address)).to.equal(0);
+    });
+
+      it("payer pays tokens, recipient balance unchanged", async function () {
+      const before = await token.balanceOf(other.address);
+
+      await wrapper.connect(user).wrapTo(other.address);
+
+      expect(await token.balanceOf(other.address)).to.equal(before);
+      expect(await token.balanceOf(wrapper.address)).to.equal(TOKENS_PER_NFT);
+    });
+
+      it("reverts unwrap if called by non-owner", async function () {
+        await wrapper.connect(user).wrap();
+      
+        await expect(
+          wrapper.connect(other).unwrap(1)
+        ).to.be.reverted;
+      });
+
+   });
 
   describe("unwrap()", function () {
     beforeEach(async function () {

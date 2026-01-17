@@ -2,33 +2,53 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./IERC20Like.sol";
 
 contract Wrapper is Ownable, ERC721{
     
     error NotNFTowner();
+    error InvalidRecipient();
 
-    event Wrapped(address indexed user, uint256 indexed tokenId, uint256 amount);
+    event Wrapped(address indexed payer, address indexed recipient, uint256 indexed tokenId, uint256 amount);
 
-    event Unwrapped(address indexed user, uint256 indexed tokenId, uint256 amount);
+    event Unwrapped(address indexed owner, uint256 indexed tokenId, uint256 amount);
 
 
-    IERC20Like public token;
+    IERC20 public immutable token;
 
-    uint256 public constant TOKENS_PER_NFT = 100 ether;
+    uint256 public immutable tokensPerNFT;
     uint256 private _tokenIdCounter;
 
-    constructor (address tokenAddress) ERC721("Wrapped Synthetic NFT", "wSYN") Ownable(msg.sender) {
-        token = IERC20Like(tokenAddress);
+    constructor (address tokenAddress, uint256 _tokensPerNFT) ERC721("Wrapped Synthetic NFT", "wSYN") Ownable(msg.sender) {
+        
+        token = IERC20(tokenAddress);
+
+        
+        tokensPerNFT = _tokensPerNFT;
+    }
+
+    function _wrap (address payer, address recipient) internal {
+        
+        token.transferFrom(payer, address(this), tokensPerNFT);
+
+        
+        _tokenIdCounter++;
+
+        
+        _safeMint(recipient, _tokenIdCounter);
+        emit Wrapped(payer, recipient, _tokenIdCounter, tokensPerNFT);
+    }
+
+    function wrapTo (address recipient) external {
+        if (recipient == address(0)) revert InvalidRecipient();
+        
+        _wrap(msg.sender, recipient);
+
     }
 
     function wrap () external {
-        token.transferFrom(msg.sender, address(this), TOKENS_PER_NFT);
-
-        _tokenIdCounter++;
-        _safeMint(msg.sender, _tokenIdCounter);
-        emit Wrapped(msg.sender, _tokenIdCounter, TOKENS_PER_NFT);
+        _wrap(msg.sender, msg.sender);
     }
 
     function unwrap (uint256 tokenId) external {
@@ -36,9 +56,9 @@ contract Wrapper is Ownable, ERC721{
 
         _burn(tokenId);
         
-        token.transfer(msg.sender, TOKENS_PER_NFT);
+        token.transfer(msg.sender, tokensPerNFT);
 
-        emit Unwrapped(msg.sender, tokenId, TOKENS_PER_NFT);
+        emit Unwrapped(msg.sender, tokenId, tokensPerNFT);
 
     }
 

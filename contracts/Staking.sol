@@ -7,7 +7,7 @@ import "./IStaking.sol";
 
 contract Staking is Ownable, IStaking {
 
-    ERC20 public token;
+    ERC20 public immutable token;
     uint256 public stakingRate = 10;
     uint256 constant YEAR = 365 days;
 

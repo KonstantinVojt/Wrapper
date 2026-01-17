@@ -33,12 +33,12 @@ describe("FullFlow integration test", function () {
 
     /* ---------------- Mint tokens ---------------- */
 
-    await factory.mint(token.address, user.address, MINT_AMOUNT);
+    await token.connect(owner).mint(user.address, MINT_AMOUNT);
 
     /* ---------------- Wrapper ---------------- */
 
     const Wrapper = await ethers.getContractFactory("Wrapper");
-    wrapper = await Wrapper.deploy(token.address);
+    wrapper = await Wrapper.deploy(token.address, TOKENS_PER_NFT);
     await wrapper.deployed();
 
     /* ---------------- Staking ---------------- */

@@ -19,6 +19,7 @@ contract SyntheticTokenFactory is Ownable, ISyntheticTokenFactory {
             symbol,
             address(this)
         );
+        token.transferOwnership(msg.sender);
 
         synthetics.push(
             SyntheticInfo({
@@ -32,16 +33,6 @@ contract SyntheticTokenFactory is Ownable, ISyntheticTokenFactory {
 
         emit SyntheticCreated(address(token), msg.sender, name, symbol);
         return address(token);
-    }
-
-    function mint(address token, address to, uint256 amount) external onlyOwner {
-        if (!isSynthetic[token]) revert UnknownSynthetic();
-        SyntheticToken(token).mint(to, amount);
-    }
-
-    function burn(address token,address from,uint256 amount) external onlyOwner {
-        if (!isSynthetic[token]) revert UnknownSynthetic();
-        SyntheticToken(token).burn(from, amount);
     }
 
     function syntheticsCount() external view returns (uint256) {
